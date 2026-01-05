@@ -1,3 +1,45 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-slate-50 text-slate-900;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display tracking-tight text-slate-900;
+  }
+}
+
+@layer components {
+  .glass-header {
+    @apply sticky top-0 z-40 backdrop-blur-md bg-white/80 border-b border-white/20 shadow-sm transition-all duration-300;
+  }
+
+  .premium-card {
+    @apply bg-white border border-slate-200/60 rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 hover:border-indigo-100;
+  }
+
+  .interactive-select {
+    @apply p-2.5 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all duration-200 cursor-pointer hover:border-slate-300;
+  }
+
+  .action-button {
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply action-button bg-slate-900 text-white hover:bg-slate-800 shadow-sm hover:shadow-md active:scale-95;
+  }
+
+  .btn-outline {
+    @apply action-button bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm active:scale-95;
+  }
+}

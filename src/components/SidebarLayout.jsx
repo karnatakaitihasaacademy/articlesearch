@@ -42,38 +42,24 @@ export default function SidebarLayout() {
   
   return (
     <AppContext.Provider value={{ searchText, setSearchText, records, setRecords}} >
-     
-      <div>
-
-        <div className="">
-          <div className="sticky top-0 z-40 sm:flex sm:h-16 shrink-0 items-center gap-x-2 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-4 sm:px-4 lg:px-8">
-            {/* <button type="button" onClick={() => setSidebarOpen(true)} className="-m-2.5 p-2.5 text-gray-700 lg:hidden">
-              <span className="sr-only">Open sidebar</span>
-              <Bars3Icon aria-hidden="true" className="h-6 w-6" />
-            </button> */}
-            <div className="flex sm:h-16 h-12 shrink-0 items-center">
-              <NavLink
-               to={'/'}
-              >
-              <img
-                alt="Kannada itihasa academy"
-                src={logo}
-                className="lg:h-8 w-auto h-6 "
-              />
+      <div className="min-h-screen bg-slate-50">
+        <header className="glass-header">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <div className="flex shrink-0 items-center">
+              <NavLink to={'/'}>
+                <img
+                  alt="Kannada itihasa academy"
+                  src={logo}
+                  className="h-8 w-auto hover:opacity-80 transition-opacity"
+                />
               </NavLink>
             </div>
-            {/* Separator */}
 
-            {/* <div aria-hidden="true" className="h-6 w-px bg-gray-200 lg:hidden" /> */}
-
-            <div className="flex flex-1 h-14 sm:h-auto relative mb-2 sm:mb-0 gap-x-4 self-stretch lg:gap-x-6">
-              <div className="relative  flex flex-1">
-                <label htmlFor="search-field" className="sr-only">
-                  Search
-                </label>
+            <div className="flex-1 max-w-2xl relative group">
+              <div className="relative">
                 <MagnifyingGlassIcon
                   aria-hidden="true"
-                  className="pointer-events-none absolute pl-2 inset-y-0 left-0 h-full w-5 text-gray-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
                 />
                 <input
                   id="search-field"
@@ -81,32 +67,33 @@ export default function SidebarLayout() {
                   type="search"
                   value={searchText}
                   onChange={handleSearchTextChange}
-                  placeholder="Search in Kannada"
-                  className="block w-full border-0 py-0 sm:my-2 pl-8 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
+                  placeholder="Search articles in Kannada..."
+                  className="block w-full bg-slate-100 border-transparent rounded-xl py-2.5 pl-10 pr-4 text-slate-900 placeholder:text-slate-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all shadow-inner hover:bg-slate-200/50"
                 />
-                
               </div>
+
               {results.length > 0 && (
-              <ul className="absolute w-full max-h-96 mt-14 overflow-y-auto z-10 bg-white border border-gray-300 rounded-md shadow-lg">
-                {results.map((item, index) => (
-                  <li
-                    key={index}
-                    className="p-2 hover:bg-indigo-100 cursor-pointer"
-                    onClick={() => handleSuggestionClick(item)}
-                  >
-                    {/* Highlight matched text */}
-                    <span>{item.article_name}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+                <ul className="absolute w-full max-h-96 mt-2 overflow-y-auto z-50 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  {results.map((item, index) => (
+                    <li
+                      key={index}
+                      className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"
+                      onClick={() => handleSuggestionClick(item)}
+                    >
+                      <span className="text-sm font-medium text-slate-700">{item.article_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
+        </header>
 
-          <main className="py-2">
-            <div className="px-4 sm:px-6 lg:px-8"><Outlet /></div>
-          </main>
-        </div>
+        <main className="py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Outlet />
+          </div>
+        </main>
       </div>
     </AppContext.Provider>
   )
