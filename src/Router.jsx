@@ -7,7 +7,7 @@ import SearchBar from "./components/websearch.jsx";
   const router = createBrowserRouter(
     [
         {
-            path: "/articlesearch/",
+            path: "/",
             element: <SidebarLayout />,
             children:[
               {

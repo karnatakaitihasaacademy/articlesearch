@@ -24,7 +24,7 @@ function classNames(...classes) {
 
 const SideBar = () =>{
     const navigation = [
-        { name: 'Home', href: '/articlesearch/', icon: HomeIcon, current: true },
+        { name: 'Home', href: '/', icon: HomeIcon, current: true },
         // { name: 'Team', href: '#', icon: UsersIcon, current: false },
         { name: 'Projects', href: '#', icon: FolderIcon, current: false },
         { name: 'Calendar', href: '#', icon: CalendarIcon, current: false },
