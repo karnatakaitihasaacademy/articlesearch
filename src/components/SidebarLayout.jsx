@@ -18,6 +18,7 @@ export default function SidebarLayout() {
   const [records, setRecords] = useState(null);
   const [results, setResults] = useState([]);
   const [queryType, setQueryType] = useState("search");
+  const [searchTrigger, setSearchTrigger] = useState(0);
 
   useEffect(() => {
     // eslint-disable-next-line react/prop-types
@@ -33,6 +34,7 @@ export default function SidebarLayout() {
     setSearchText(suggestion.article_name);
     setResults([]);
     setQueryType("suggestion");
+    setSearchTrigger(prev => prev + 1);
   };
 
   const handleSearchTextChange = (e) => {
@@ -40,13 +42,19 @@ export default function SidebarLayout() {
     setQueryType("search");
   };
   
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setResults([]);
+    setSearchTrigger(prev => prev + 1);
+  };
+  
   return (
-    <AppContext.Provider value={{ searchText, setSearchText, records, setRecords}} >
+    <AppContext.Provider value={{ searchText, setSearchText, records, setRecords, searchTrigger}} >
       <div className="min-h-screen bg-slate-50">
         <header className="glass-header">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
             <div className="flex shrink-0 items-center">
-              <NavLink to={'/'}>
+              <NavLink to={'https://karnatakaitihasaacademy.org'}>
                 <img
                   alt="Kannada itihasa academy"
                   src={logo}
@@ -56,21 +64,23 @@ export default function SidebarLayout() {
             </div>
 
             <div className="flex-1 max-w-2xl relative group">
-              <div className="relative">
-                <MagnifyingGlassIcon
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
-                />
-                <input
-                  id="search-field"
-                  name="search"
-                  type="search"
-                  value={searchText}
-                  onChange={handleSearchTextChange}
-                  placeholder="Search articles in Kannada..."
-                  className="block w-full bg-slate-100 border-transparent rounded-xl py-2.5 pl-10 pr-4 text-slate-900 placeholder:text-slate-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all shadow-inner hover:bg-slate-200/50"
-                />
-              </div>
+              <form onSubmit={handleSearchSubmit}>
+                <div className="relative">
+                  <MagnifyingGlassIcon
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
+                  />
+                  <input
+                    id="search-field"
+                    name="search"
+                    type="search"
+                    value={searchText}
+                    onChange={handleSearchTextChange}
+                    placeholder="Search articles in Kannada..."
+                    className="block w-full bg-slate-100 border-transparent rounded-xl py-2.5 pl-10 pr-4 text-slate-900 placeholder:text-slate-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all shadow-inner hover:bg-slate-200/50"
+                  />
+                </div>
+              </form>
 
               {results.length > 0 && (
                 <ul className="absolute w-full max-h-96 mt-2 overflow-y-auto z-50 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
