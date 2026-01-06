@@ -29,6 +29,7 @@ export function SearchComponent({
     volume: [],
     authorname_in_english: [],
     dynasty: [],
+    subject: [],
   });
   const searchby = [
     {
@@ -46,6 +47,10 @@ export function SearchComponent({
     {
       name: "Dynasty",
       column: "dynasty",
+    },
+    {
+      name: "Subject",
+      column: "subject",
     },
     {
       name: "District",
@@ -211,6 +216,7 @@ export default function Home() {
       'volume': 'volume',
       'author': 'authorname_in_english',
       'dynasty': 'dynasty',
+      'subject': 'subject',
       'district': 'district'
     };
     
@@ -225,6 +231,8 @@ export default function Home() {
       setSelectedColumns(initialFilters);
     }
     setIsInitialized(true);
+    // Trigger initial data load
+    getrecords();
   }, []);
   
   // Update URL when filters change
@@ -238,6 +246,7 @@ export default function Home() {
       'volume': 'volume',
       'authorname_in_english': 'author',
       'dynasty': 'dynasty',
+      'subject': 'subject',
       'district': 'district'
     };
     
@@ -329,6 +338,18 @@ export default function Home() {
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Dynasty</p>
                       <p className="text-sm font-medium text-slate-700">{record.dynasty_in_kannada || 'N/A'}</p>
                       <p className="text-xs text-slate-500 italic">{record.dynasty || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 p-1 bg-purple-50 rounded-md">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-purple-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Subject</p>
+                      <p className="text-sm font-medium text-slate-700">{record.subject || 'N/A'}</p>
                     </div>
                   </div>
 
