@@ -3,6 +3,7 @@
 // import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import { supabase } from "../../../utils/supabase";
 import { useContext, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Loading from "../../components/Loading";
 import { AppContext } from "../../components/SidebarLayout";
 
@@ -28,8 +29,6 @@ export function SearchComponent({
     volume: [],
     authorname_in_english: [],
     dynasty: [],
-    author_in_kannada: [],
-    dynasty_in_kannada: [],
   });
   const searchby = [
     {
@@ -41,20 +40,12 @@ export function SearchComponent({
       column: "volume",
     },
     {
-      name: "English Author",
+      name: "Author",
       column: "authorname_in_english",
     },
     {
-      name: "English Dynasty",
-      column: "dynasty",
-    },
-    {
-      name: "Author Name",
-      column: "author_in_kannada",
-    },
-    {
       name: "Dynasty",
-      column: "dynasty_in_kannada",
+      column: "dynasty",
     },
     {
       name: "District",
@@ -77,7 +68,12 @@ export function SearchComponent({
             ...new Set(
               results[index].data
                 .map((item) => item[column])
-                .sort()
+                .sort((a, b) => {
+                  if (column === 'year' || column === 'volume') {
+                    return (Number(a) || 0) - (Number(b) || 0);
+                  }
+                  return String(a).localeCompare(String(b));
+                })
                 .filter(Boolean)
             ),
           ];
@@ -91,15 +87,23 @@ export function SearchComponent({
   }, []);
   const handleSearchTextChange = (e, column) => {
     const { value } = e.target;
-    setSelectedColumns((prev) => ({
-      ...prev,
-      [column]: { ...prev[column], searchText: value },
-    }));
-    if(value !==''){
-      setApplyfilter(prev=>!prev)
-    }
-  
     
+    if (value === '') {
+      // Remove the filter for this column when "All" is selected
+      setSelectedColumns((prev) => {
+        const newColumns = { ...prev };
+        delete newColumns[column];
+        return newColumns;
+      });
+    } else {
+      // Set the filter for this column
+      setSelectedColumns((prev) => ({
+        ...prev,
+        [column]: { ...prev[column], searchText: value },
+      }));
+    }
+    
+    setApplyfilter(prev => !prev);
   };
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
@@ -153,14 +157,16 @@ export function SearchComponent({
 
 
 export default function Home() {
-  const {records, setRecords, searchText, setSearchText} = useContext(AppContext)
+  const {records, setRecords, searchText, setSearchText, searchTrigger} = useContext(AppContext)
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [pageSize] = useState(30); // Set default page size
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
-  const [selectedColumns, setSelectedColumns] = useState([]);
+  const [selectedColumns, setSelectedColumns] = useState({});
   const [applyfilter, setApplyfilter] = useState(false);
   const [language, setLanguage] = useState("english");
+  const [isInitialized, setIsInitialized] = useState(false);
   const buildQuery = async () => {
     const numericColumns = ["year", "volume"];
     let query = supabase
@@ -182,9 +188,8 @@ export default function Home() {
       // const orCondition = conditions.join(",");
       
     } else if (searchText) {
-      query = query.textSearch("article_name", searchText, {
-        type: "websearch",
-      });
+      // Search across article_name, author, and dynasty fields
+      query = query.or(`article_name.ilike.%${searchText}%,authorname_in_english.ilike.%${searchText}%,dynasty.ilike.%${searchText}%`);
     }
     return query;
   };
@@ -196,13 +201,74 @@ export default function Home() {
     setTotalPages(Math.ceil(count / pageSize));
     return records;
   };
+  
+  // Initialize filters from URL on mount
   useEffect(() => {
+    const initialFilters = {};
+    // Map URL params to database columns
+    const paramToColumnMap = {
+      'year': 'year',
+      'volume': 'volume',
+      'author': 'authorname_in_english',
+      'dynasty': 'dynasty',
+      'district': 'district'
+    };
+    
+    Object.entries(paramToColumnMap).forEach(([param, column]) => {
+      const value = searchParams.get(param);
+      if (value) {
+        initialFilters[column] = { searchText: value };
+      }
+    });
+    
+    if (Object.keys(initialFilters).length > 0) {
+      setSelectedColumns(initialFilters);
+    }
+    setIsInitialized(true);
+  }, []);
+  
+  // Update URL when filters change
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const params = new URLSearchParams();
+    // Map database columns to URL params
+    const columnToParamMap = {
+      'year': 'year',
+      'volume': 'volume',
+      'authorname_in_english': 'author',
+      'dynasty': 'dynasty',
+      'district': 'district'
+    };
+    
+    Object.entries(selectedColumns).forEach(([column, value]) => {
+      if (value?.searchText) {
+        const param = columnToParamMap[column] || column;
+        params.set(param, value.searchText);
+      }
+    });
+    
+    setSearchParams(params, { replace: true });
+  }, [selectedColumns, isInitialized]);
+  
+  // Trigger search when header search is submitted
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (searchTrigger > 0) {
+      setPage(1);
+      getrecords();
+    }
+  }, [searchTrigger]);
+  
+  useEffect(() => {
+    if (!isInitialized) return;
     setPage(1);
     getrecords();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ searchText, applyfilter]);
 
   useEffect(() => { 
+    if (!isInitialized) return;
     getrecords(); 
   }, [page]);
 
