@@ -2,26 +2,60 @@
 // import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 // import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import { supabase } from "../../../utils/supabase";
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Loading from "../../components/Loading";
 import { AppContext } from "../../components/SidebarLayout";
+
+const SEARCH_BY = [
+  {
+    name: "Year",
+    column: "year",
+  },
+  {
+    name: "Volume",
+    column: "volume",
+  },
+  {
+    name: "Author",
+    column: "authorname_in_english",
+  },
+  {
+    name: "Dynasty",
+    column: "dynasty",
+  },
+  {
+    name: "Subject",
+    column: "subject",
+  },
+  {
+    name: "District",
+    column: "district",
+  },
+];
+const OPTION_COLUMNS = SEARCH_BY.map(({ column }) => column).join(",");
+const OPTION_PAGE_SIZE = 1000;
+
+const sortOptions = (column, values) => {
+  return values.sort((a, b) => {
+    if (column === "year" || column === "volume") {
+      return (Number(a) || 0) - (Number(b) || 0);
+    }
+
+    return String(a).localeCompare(String(b));
+  });
+};
 
 export function SearchComponent({
   selectedColumns,
   setSelectedColumns,
   searchText,
   setSearchText,
-  setApplyfilter,
-  // total,
-  language,
-  setLanguage
 }) {
   // Handle click on an autocomplete suggestion
   const handleClear = () =>{
     setSearchText('');
     setSelectedColumns({});
-    setApplyfilter(prev=>!prev)
   };
   const [options, setOptions] = useState({
     year: [],
@@ -31,58 +65,35 @@ export function SearchComponent({
     dynasty: [],
     subject: [],
   });
-  const searchby = [
-    {
-      name: "Year",
-      column: "year",
-    },
-    {
-      name: "Volume",
-      column: "volume",
-    },
-    {
-      name: "Author",
-      column: "authorname_in_english",
-    },
-    {
-      name: "Dynasty",
-      column: "dynasty",
-    },
-    {
-      name: "Subject",
-      column: "subject",
-    },
-    {
-      name: "District",
-      column: "district",
-    },
-  ]
-  
   useEffect(() => {
-    console.log("working");
     const fetchOptions = async () => {
       try {
-        const promises = searchby.map(({column}) =>
-          supabase.from("karnataka_itihasa_records").select(column)
-        );
-        // setOptions(newOptions);
-        const results = await Promise.all(promises);
+        let from = 0;
+        let allRows = [];
+        let hasMoreRows = true;
+
+        while (hasMoreRows) {
+          const { data, error } = await supabase
+            .from("karnataka_itihasa_records")
+            .select(OPTION_COLUMNS)
+            .range(from, from + OPTION_PAGE_SIZE - 1);
+
+          if (error) throw error;
+
+          allRows = [...allRows, ...(data || [])];
+          hasMoreRows = (data || []).length === OPTION_PAGE_SIZE;
+          from += OPTION_PAGE_SIZE;
+        }
+
         const newOptions = {};
-        searchby.forEach(({column}, index) => {
-          newOptions[column] = [
-            ...new Set(
-              results[index].data
-                .map((item) => item[column])
-                .sort((a, b) => {
-                  if (column === 'year' || column === 'volume') {
-                    return (Number(a) || 0) - (Number(b) || 0);
-                  }
-                  return String(a).localeCompare(String(b));
-                })
-                .filter(Boolean)
-            ),
+        SEARCH_BY.forEach(({ column }) => {
+          const uniqueValues = [
+            ...new Set(allRows.map((item) => item[column]).filter(Boolean)),
           ];
+
+          newOptions[column] = sortOptions(column, uniqueValues);
         });
+
         setOptions(newOptions);
       } catch (error) {
         console.error("Error fetching options from Supabase:", error);
@@ -107,15 +118,13 @@ export function SearchComponent({
         [column]: { ...prev[column], searchText: value },
       }));
     }
-    
-    setApplyfilter(prev => !prev);
   };
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
       <div className="p-6 md:p-8">
         <div className="flex flex-col gap-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {searchby.map((searchindex) => (
+            {SEARCH_BY.map((searchindex) => (
               <div key={searchindex.column} className="flex flex-col">
                 <label
                   className="mb-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider"
@@ -169,23 +178,20 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [selectedColumns, setSelectedColumns] = useState({});
-  const [applyfilter, setApplyfilter] = useState(false);
-  const [language, setLanguage] = useState("english");
   const [isInitialized, setIsInitialized] = useState(false);
-  const buildQuery = async () => {
+  const buildQuery = useCallback((targetPage) => {
     const numericColumns = ["year", "volume"];
     let query = supabase
       .from("karnataka_itihasa_records")
       .select("*", { count: "exact" })
-      .range((page - 1) * pageSize, page * pageSize - 1);
+      .range((targetPage - 1) * pageSize, targetPage * pageSize - 1);
     if (Object.keys(selectedColumns)?.length > 0) {
-       Object.entries(selectedColumns).map(
+       Object.entries(selectedColumns).forEach(
         ([column, value]) => {
           if (numericColumns.includes(column) && !isNaN(value.searchText)) {
             query = query.eq(column, Number(value.searchText));
           } else {
-            const escapedText =value.searchText.replace(/\s*\(.*?\)\s*/g, '%').trim();
-            console.log(escapedText)
+            const escapedText = value.searchText.replace(/\s*\(.*?\)\s*/g, '%').trim();
             query = query.ilike(column, `%${escapedText}%`);
           }
         }
@@ -197,15 +203,23 @@ export default function Home() {
       query = query.or(`article_name.ilike.%${searchText}%,authorname_in_english.ilike.%${searchText}%,dynasty.ilike.%${searchText}%`);
     }
     return query;
-  };
-  console.log(selectedColumns);
-  const getrecords = async () => {
-    const { data: records, count } = await buildQuery();
+  }, [pageSize, searchText, selectedColumns]);
+  const getrecords = useCallback(async (targetPage) => {
+    const { data: records, count, error } = await buildQuery(targetPage);
+
+    if (error) {
+      console.error("Error fetching records from Supabase:", error);
+      setRecords([]);
+      setTotal(0);
+      setTotalPages(0);
+      return [];
+    }
+
     setRecords(records);
     setTotal(count);
-    setTotalPages(Math.ceil(count / pageSize));
+    setTotalPages(Math.ceil((count || 0) / pageSize));
     return records;
-  };
+  }, [buildQuery, pageSize, setRecords]);
   
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -231,8 +245,8 @@ export default function Home() {
       setSelectedColumns(initialFilters);
     }
     setIsInitialized(true);
-    // Trigger initial data load
-    getrecords();
+    // Initial data load runs after URL filters have been applied.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Update URL when filters change
@@ -258,28 +272,28 @@ export default function Home() {
     });
     
     setSearchParams(params, { replace: true });
-  }, [selectedColumns, isInitialized]);
+  }, [selectedColumns, isInitialized, setSearchParams]);
   
   // Trigger search when header search is submitted
   useEffect(() => {
     if (!isInitialized) return;
     if (searchTrigger > 0) {
       setPage(1);
-      getrecords();
+      getrecords(1);
     }
-  }, [searchTrigger]);
+  }, [getrecords, isInitialized, searchTrigger]);
   
   useEffect(() => {
     if (!isInitialized) return;
     setPage(1);
-    getrecords();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ searchText, applyfilter]);
+    getrecords(1);
+  }, [getrecords, isInitialized, searchText, selectedColumns]);
 
   useEffect(() => { 
     if (!isInitialized) return;
-    getrecords(); 
-  }, [page]);
+    if (page === 1) return;
+    getrecords(page); 
+  }, [getrecords, isInitialized, page]);
 
   const handlePrevious = () => {
     if (page > 1) setPage((prev) => prev - 1);
@@ -297,10 +311,7 @@ export default function Home() {
         selectedColumns={selectedColumns}
         searchText={searchText}
         setSearchText={setSearchText}
-        setApplyfilter={setApplyfilter}
         total={total}
-        language={language}
-        setLanguage={setLanguage}
       />
       {records ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
